@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?><rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[DoraCoder - Blog by @tranphuquy19]]></title><description><![CDATA[Nơi bạn tìm ra requirements cho bản thân]]></description><link>https://doracoder.tk</link><generator>GatsbyJS</generator><lastBuildDate>Sat, 27 Mar 2021 05:54:40 GMT</lastBuildDate><item><title><![CDATA[Kết hợp Socket.io trong dự án React (best practice)]]></title><description><![CDATA[Kết hợp bộ ba Socket.io+ReactJS+NestJS theo hướng hoàn hảo nhất]]></description><link>https://doracoder.tk/posts/ket-hop-socket-io-trong-du-an-best-practice</link><guid isPermaLink="false">https://doracoder.tk/posts/ket-hop-socket-io-trong-du-an-best-practice</guid><pubDate>Sat, 27 Mar 2021 04:01:42 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/react-socket-1.png&quot; alt=&quot;react-socket-1&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Đã từng có rất nhiều blogger khác nhau đã từng hướng dẫn về chủ đề này rồi, nhưng mỗi người lại hướng dẫn theo nhiều cách khác nhau. Trong bài viết này, mình sẽ hướng dẫn implement thư viện socket.io vào trong dự án React theo cách tối ưu nhất, dễ mở rộng nhất. Với back-end sử dụng framework ưa thích của mình là NestJS tuy nhiên bạn cũng có thể sử dụng bất kỳ FW khác như ExpressJS hoặc chỉ sử dụng Socket.io server thôi cũng được.&lt;/p&gt;
+&lt;p&gt;Bài viết được chia làm hai phần, với phần đầu là triển khai &lt;strong&gt;real-time server&lt;/strong&gt; và phần 2 là &lt;strong&gt;real-time client&lt;/strong&gt; với thư viện react+socket-io-client&lt;/p&gt;
+&lt;h2 id=&quot;realtime-server&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#realtime-server&quot; aria-label=&quot;realtime server permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Realtime server&lt;/h2&gt;
+&lt;p&gt;Mình sẽ hướng dẫn dựng 1 con server realtime với framework &lt;a href=&quot;https://nestjs.com/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;NestJS&lt;/a&gt; - bạn có thể tìm hiểu thêm về NestJS &lt;a href=&quot;https://docs.nestjs.com/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;tại đây&lt;/a&gt;. Tuy nhiên nếu bạn đã có server realtime như đã nói ở trên thì có thể bỏ qua bước này.&lt;/p&gt;
+&lt;p&gt;Trong phần này mình cũng hướng dẫn và giải thích một số kiến thức liên quan đến NestJS dành cho bạn nào đang tìm hiểu framework này.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Bài viết coi như bạn đã có kiến thức cơ bản về nodejs nói chung, cũng như đã cài một số tool như &lt;code class=&quot;language-text&quot;&gt;@nestjs/cli&lt;/code&gt; cũng như &lt;code class=&quot;language-text&quot;&gt;create-react-app&lt;/code&gt; và &lt;code class=&quot;language-text&quot;&gt;yarn&lt;/code&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&quot;init-project&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#init-project&quot; aria-label=&quot;init project permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Init project&lt;/h3&gt;
+&lt;p&gt;Dùng @nestjs/cli để khởi tạo dự án&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;nest new server
+cd server&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h3 id=&quot;install-dependencies&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#install-dependencies&quot; aria-label=&quot;install dependencies permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Install dependencies&lt;/h3&gt;
+&lt;p&gt;Chúng ta tiến hành cài đặt mốt số thư viện cần thiết cho chức năng realtime&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;yarn add @nestjs/platform-socket.io @nestjs/websockets
+yarn add -D @types/socket.io&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h3 id=&quot;generate-message-module&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#generate-message-module&quot; aria-label=&quot;generate message module permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Generate message module&lt;/h3&gt;
+&lt;p&gt;Tiếp theo ta chạy các lệnh sau để NestJS có thể sinh mã giúp chúng ta để tiết kiệm thời gian và công sức&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;nest g mo message # generate module
+nest g co message # generate controller
+nest g service message # generate service
+nest g gateway message # generate gateway&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Giải thích thêm về &lt;code class=&quot;language-text&quot;&gt;Gateway&lt;/code&gt;, đây là class được chú thích (annotated) bởi decorator &lt;code class=&quot;language-text&quot;&gt;@WebSocketGateway()&lt;/code&gt;. Nó làm việc với 2 web-socket platforms phổ biến là &lt;code class=&quot;language-text&quot;&gt;socket.io&lt;/code&gt; và &lt;code class=&quot;language-text&quot;&gt;ws&lt;/code&gt;. Nên khi cài &lt;code class=&quot;language-text&quot;&gt;@nestjs/websockets&lt;/code&gt; nó cũng yêu cầu bạn phải cài thêm &lt;code class=&quot;language-text&quot;&gt;socket.io&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;ws&lt;/code&gt;,… hoặc bạn cũng có thể custom theo cách thức &lt;a href=&quot;https://docs.nestjs.com/websockets/adapter&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;này&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;Gateway&lt;/code&gt; cũng được coi là 1 &lt;code class=&quot;language-text&quot;&gt;provider&lt;/code&gt; và hầu hết các khái niệm trong Nest như: &lt;em&gt;dependency injection, decorators, exception filters, pipes, guards and interceptors&lt;/em&gt; đều được áp dụng trong class này. Và bản thân &lt;code class=&quot;language-text&quot;&gt;Gateway&lt;/code&gt; cũng có thể được injected trong classes khác như (provider or controller)&lt;/p&gt;
+&lt;h3 id=&quot;project-structure&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#project-structure&quot; aria-label=&quot;project structure permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Project structure&lt;/h3&gt;
+&lt;p&gt;Đến bước này bạn project của bạn có cấu trúc như sau&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;.
+├── package.json
+├── src
+│   ├── app.controller.ts
+│   ├── app.module.ts
+│   ├── app.service.ts
+│   ├── main.ts
+│   └── message
+│       ├── message.controller.ts
+│       ├── message.gateway.ts
+│       ├── message.module.ts
+│       └── message.service.ts
+└── tsconfig.json&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;</content:encoded></item><item><title><![CDATA[DevOps - Triển khai Kubernetes cluster trong một nốt nhạc]]></title><description><![CDATA[DevOps: Triển khai Kubernetes cluster trong một nốt nhạc]]></description><link>https://doracoder.tk/posts/trien-khai-kubernetes-cluster-trong-mot-not-nhac</link><guid isPermaLink="false">https://doracoder.tk/posts/trien-khai-kubernetes-cluster-trong-mot-not-nhac</guid><pubDate>Sat, 13 Mar 2021 11:20:27 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/k8s-vagrant-1.png&quot; alt=&quot;Kubernetes&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Trong những năm gần đây, nhiều ứng dụng đã được container hóa (containerized) bằng cách sử dụng docker. Việc đó đã giúp tốc độ phát triển ứng dụng nhanh chưa từng thấy, phải nói “người người dùng docker, nhà nhà dùng docker”. Với việc triển khai hệ thống chỉ sử dụng docker, khiến việc quản lý các containers là vô cùng khó khăn. Vì thế, ông anh to lớn Google đã cho ra đời Kubernetes để giải quyết vấn đề trên và trên hết là free.&lt;/p&gt;
+&lt;p&gt;Nhưng để tiếp cận nó thì không hẳn là free. Để xây dựng một k8s cluster, thì bạn phải có ít nhất là 3 VPS, hoặc sử dụng các dịch vụ cloud như Google Kubernetes Engine (GKE), Elastic Container Service for Kubernetes（EKS）,.. và tất nhiên là tốn phí. Để có thể setup nhanh 1 k8s cluster ở local bạn có thể sử dụng MiniKube, hoặc MicroK8s,.. Tuy nhiên các giải pháp trên có một vài nhược điểm như khó custom, không phải là k8s chính chủ,.. &lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;TL;DR&lt;/strong&gt; Trong bài viết này, mình sẽ hướng dẫn setup nhanh một k8s cluster trong vài giây mà không cần phải setup lằng nhằng bằng cách sử dụng &lt;a href=&quot;https://www.vagrantup.com&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Vagrant&lt;/a&gt;. Mình sẽ dành 1 bài để viết về thằng Vagrant sau.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&gt;&gt;&gt; Kubernetes có một người anh em cùng cha khác ông nội là Docker Swarm&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;1-chuẩn-bị&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-chu%E1%BA%A9n-b%E1%BB%8B&quot; aria-label=&quot;1 chuẩn bị permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. Chuẩn bị&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Một PC có ít nhất 8GB ram với Virtual box được cài sẵn&lt;/li&gt;
+&lt;li&gt;Cài đặt &lt;a href=&quot;https://www.vagrantup.com/downloads&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Vagrant&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;2-triển-khai&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-tri%E1%BB%83n-khai&quot; aria-label=&quot;2 triển khai permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2. Triển khai&lt;/h2&gt;
+&lt;h3 id=&quot;21-hạ-tầng-cluster&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#21-h%E1%BA%A1-t%E1%BA%A7ng-cluster&quot; aria-label=&quot;21 hạ tầng cluster permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.1 Hạ tầng cluster&lt;/h3&gt;
+&lt;p&gt;Như đã nói, chúng ta sẽ dùng Vagrant để xây dựng cluster bao gồm 1 master và 2 worker như sau:&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;node&lt;/th&gt;
+&lt;th&gt;hostname&lt;/th&gt;
+&lt;th&gt;cpus&lt;/th&gt;
+&lt;th&gt;memory&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;th&gt;OS&lt;/th&gt;
+&lt;th&gt;username/password&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;master&lt;/td&gt;
+&lt;td&gt;master.dora&lt;/td&gt;
+&lt;td&gt;2&lt;/td&gt;
+&lt;td&gt;2GB&lt;/td&gt;
+&lt;td&gt;172.16.10.100&lt;/td&gt;
+&lt;td&gt;Centos7&lt;/td&gt;
+&lt;td&gt;root/11231123&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;worker1&lt;/td&gt;
+&lt;td&gt;worker1.dora&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;1GB&lt;/td&gt;
+&lt;td&gt;172.16.10.101&lt;/td&gt;
+&lt;td&gt;Centos7&lt;/td&gt;
+&lt;td&gt;root/11231123&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;worker2&lt;/td&gt;
+&lt;td&gt;worker2.dora&lt;/td&gt;
+&lt;td&gt;1&lt;/td&gt;
+&lt;td&gt;1GB&lt;/td&gt;
+&lt;td&gt;172.16.10.102&lt;/td&gt;
+&lt;td&gt;Centos7&lt;/td&gt;
+&lt;td&gt;root/11231123&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&gt;&gt;&gt; IP các node có thể setup tùy ý, tuy nhiên theo kinh nghiệm của mình thì nên khác với CIDR của một số  addons mạng như Calico, Flannel,… để tránh xung đột &lt;a href=&quot;https://kubernetes.io/docs/concepts/cluster-administration/addons/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Xem thêm&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h3 id=&quot;22-vagrant-boxes-structure&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#22-vagrant-boxes-structure&quot; aria-label=&quot;22 vagrant boxes structure permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.2 Vagrant boxes structure&lt;/h3&gt;
+&lt;p&gt;Chúng ta sẽ có cấu trúc thư mục và nội dung từng file như sau&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;iecst&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;.
+├── master
+│   └── Vagrantfile
+├── woker1
+│   └── Vagrantfile
+└── worker2
+    └── Vagrantfile&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;deckgo-highlight-code language=&quot;ruby&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Nội dung ./master/Vagrantfile
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(&amp;quot;2&amp;quot;) do |config|
+    # Vagrant box: https://app.vagrantup.com/tranphuquy19/boxes/centos7-k8s
+    config.vm.box = &amp;quot;tranphuquy19/centos7-k8s&amp;quot;
+    config.vm.box_version = &amp;quot;1.0.0&amp;quot;
+    config.vm.network &amp;quot;private_network&amp;quot;, ip: &amp;quot;172.16.10.100&amp;quot; # IP của node master
+    config.vm.hostname = &amp;quot;master.dora&amp;quot; # Hostname
+  
+    config.vm.provider &amp;quot;virtualbox&amp;quot; do |vb|
+        vb.name = &amp;quot;master.dora&amp;quot; # Tên máy ảo
+        vb.cpus = 2 # Số lượng CPU
+        vb.memory = &amp;quot;2048&amp;quot; # Dung lượng RAM
+    end
+
+    # Setup password và thêm hostname các nodes vào file hosts
+    config.vm.provision &amp;quot;shell&amp;quot;, inline: &amp;lt;&amp;lt;-SHELL
+echo &amp;quot;11231123&amp;quot; | passwd --stdin root
+sed -i &amp;#39;s/^PasswordAuthentication no/PasswordAuthentication yes/&amp;#39; /etc/ssh/sshd_config
+systemctl reload sshd
+cat &amp;gt;&amp;gt;/etc/hosts&amp;lt;&amp;lt;EOF
+172.16.10.100 master.dora
+172.16.10.101 worker1.dora
+172.16.10.102 worker2.dora
+EOF
+SHELL
+
+end&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;deckgo-highlight-code language=&quot;ruby&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Nội dung ./worker1/Vagrantfile
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(&amp;quot;2&amp;quot;) do |config|
+    config.vm.box = &amp;quot;tranphuquy19/centos7-k8s&amp;quot;
+    config.vm.box_version = &amp;quot;1.0.0&amp;quot;
+    config.vm.network &amp;quot;private_network&amp;quot;, ip: &amp;quot;172.16.10.101&amp;quot;
+    config.vm.hostname = &amp;quot;worker1.dora&amp;quot;
+  
+    config.vm.provider &amp;quot;virtualbox&amp;quot; do |vb|
+        vb.name = &amp;quot;worker1.dora&amp;quot;
+        vb.cpus = 1
+        vb.memory = &amp;quot;1024&amp;quot;
+    end
+  
+    config.vm.provision &amp;quot;shell&amp;quot;, inline: &amp;lt;&amp;lt;-SHELL
+echo &amp;quot;11231123&amp;quot; | passwd --stdin root
+sed -i &amp;#39;s/^PasswordAuthentication no/PasswordAuthentication yes/&amp;#39; /etc/ssh/sshd_config
+systemctl reload sshd
+cat &amp;gt;&amp;gt;/etc/hosts&amp;lt;&amp;lt;EOF
+172.16.10.100 master.dora
+172.16.10.101 worker1.dora
+172.16.10.102 worker2.dora
+EOF
+SHELL
+
+end&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;deckgo-highlight-code language=&quot;ruby&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Nội dung ./worker2/Vagrantfile
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(&amp;quot;2&amp;quot;) do |config|
+    config.vm.box = &amp;quot;tranphuquy19/centos7-k8s&amp;quot;
+    config.vm.box_version = &amp;quot;1.0.0&amp;quot;
+    config.vm.network &amp;quot;private_network&amp;quot;, ip: &amp;quot;172.16.10.102&amp;quot;
+    config.vm.hostname = &amp;quot;worker2.dora&amp;quot;
+  
+    config.vm.provider &amp;quot;virtualbox&amp;quot; do |vb|
+        vb.name = &amp;quot;worker2.dora&amp;quot;
+        vb.cpus = 1
+        vb.memory = &amp;quot;1024&amp;quot;
+    end
+  
+    config.vm.provision &amp;quot;shell&amp;quot;, inline: &amp;lt;&amp;lt;-SHELL
+echo &amp;quot;11231123&amp;quot; | passwd --stdin root
+sed -i &amp;#39;s/^PasswordAuthentication no/PasswordAuthentication yes/&amp;#39; /etc/ssh/sshd_config
+systemctl reload sshd
+cat &amp;gt;&amp;gt;/etc/hosts&amp;lt;&amp;lt;EOF
+172.16.10.100 master.dora
+172.16.10.101 worker1.dora
+172.16.10.102 worker2.dora
+EOF
+SHELL
+
+end&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Box &lt;code class=&quot;language-text&quot;&gt;tranphuquy19/centos7-k8s&lt;/code&gt; là box mình build dựa trên HĐH &lt;a href=&quot;https://app.vagrantup.com/tranphuquy19/boxes/centos7&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Centos7&lt;/a&gt;, kèm theo đó là Docker v1.13.1 và Kubernetes v1.20.4&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;cd&lt;/code&gt; từng thư mục và chạy &lt;code class=&quot;language-text&quot;&gt;vagrant up&lt;/code&gt;, Vagrant sẽ giúp chúng ta cấu hình mạng, cpu, dung lượng ram, cũng như hệ điều hành một cách tự động theo files chúng ta đã mô tả&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/k8s-vagrant-2.png&quot; alt=&quot;vagrant up&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Đến đây, vagrant đã giúp chúng ta khởi tạo một mạng với IP &lt;code class=&quot;language-text&quot;&gt;172.16.10.0/24&lt;/code&gt;. Các nodes master, worker1, worker2 được gắn với các IP lần lượt là &lt;code class=&quot;language-text&quot;&gt;172.16.10.100&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;172.16.10.101&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;172.16.10.102&lt;/code&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&gt;&gt;&gt; Thực hiện lệnh ping đến hostname của node khác để kiểm tra kết nối mạng giữa các node với nhau. Vd: &lt;code class=&quot;language-text&quot;&gt;ping worker1.dora&lt;/code&gt;, &lt;code class=&quot;language-text&quot;&gt;ping master.dora&lt;/code&gt;, …&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Quá trình cài nhanh hoặc chậm tùy thuộc vào tốc độ mạng của bạn. Sau khi cài đặt xong chúng ta &lt;code class=&quot;language-text&quot;&gt;ssh&lt;/code&gt; đến từng node bằng lệnh &lt;code class=&quot;language-text&quot;&gt;ssh root@172.16.10.x&lt;/code&gt; với password là &lt;code class=&quot;language-text&quot;&gt;11231123&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/k8s-vagrant-3.png&quot; alt=&quot;vagrant up&quot;&gt;&lt;/p&gt;
+&lt;h3 id=&quot;23-setup-k8s-cluster&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#23-setup-k8s-cluster&quot; aria-label=&quot;23 setup k8s cluster permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.3 Setup k8s cluster&lt;/h3&gt;
+&lt;p&gt;Với box &lt;a href=&quot;https://app.vagrantup.com/tranphuquy19/boxes/centos7-k8s&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;tranphuquy19/centos7-k8s&lt;/a&gt; đã được cài đặt sẵn docker và k8s. Chúng ta tiến hành Init k8s và join các node vào kube cluster mà không cần phải trải qua các bước cài đặt rườm rà. Chạy lần lượt các lệnh sau:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Tại node master
+# Khởi tạo kube master, với pod-network-cidr của Calico
+kubeadm init --apiserver-advertise-address 172.16.10.100 --pod-network-cidr=192.168.0.0/16&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Đến đây, khi chạy lệnh &lt;code class=&quot;language-text&quot;&gt;kubectl&lt;/code&gt; chúng ta sẽ gặp lỗi &lt;code class=&quot;language-text&quot;&gt;The connection to the server localhost:8080 was refused - did you specify the right host or port?&lt;/code&gt; Vì chúng ta chưa chưa cấu hình môi trường cho nó. Để fix lỗi này chúng ta chạy lệnh &lt;code class=&quot;language-text&quot;&gt;export KUBECONFIG=/etc/kubernetes/admin.conf&lt;/code&gt; - và để tránh phải run lệnh trên mỗi khi đăng nhập, chúng ta chạy lệnh sau: &lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;echo &amp;quot;export KUBECONFIG=/etc/kubernetes/admin.conf&amp;quot; &amp;gt;&amp;gt;  ~/.bashrc&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Với việc thêm &lt;code class=&quot;language-text&quot;&gt;export KUBECONFIG=/etc/kubernetes/admin.conf&lt;/code&gt; vào file &lt;code class=&quot;language-text&quot;&gt;.bashrc&lt;/code&gt; nó sẽ được chạy mỗi khi ta đăng nhập vào node. Tiếp theo, ta chạy lệnh &lt;code class=&quot;language-text&quot;&gt;exit&lt;/code&gt; để đăng xuất vào đăng nhập lại với ssh đã nói ở trên&lt;/p&gt;
+&lt;p&gt;Chúng ta tiến hành cài đặt network policy provider cho k8s cluster&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Tại node master
+kubectl apply -f https://docs.projectcalico.org/v3.10/manifests/calico.yaml&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Đến đây, việc setup trên node master cơ bản đã hoàn thiện. Chạy lệnh sau để lấy join command&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;# Tại node master
+kubeadm token create --print-join-command&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Lệnh trên sẽ output ra chuỗi như sau, chúng ta copy chuỗi đó và paste vào worker1 và worker2 để join 2 node này vào cluster&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;kubeadm join 172.16.10.100:6443 --token jdkri5.0efclctyqi5wzbw9 --discovery-token-ca-cert-hash sha256:8ea0c3f1ade7ebb0220a86ddecf547129c74922db9c874353dee9e8348cf2eb0&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;&lt;img src=&quot;/media/k8s-vagrant-4.png&quot; alt=&quot;join command&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Chạy lệnh &lt;code class=&quot;language-text&quot;&gt;kubectl get nodes&lt;/code&gt; trên master node để kiểm tra các nodes hiện có trong cluster. Nếu như hình bên dưới là đã thành công&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/k8s-vagrant-5.png&quot; alt=&quot;kubectl get nodes&quot;&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Có thể mất 1-2 phút để kube tiến hành cài đặt và join node vào cluster (STATUS = Ready)&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Đến đây bạn đã có 1 Kubernetes cluster để vọc vạch và tìm hiểu. Chúc các bạn thành công! 😙&lt;/p&gt;</content:encoded></item><item><title><![CDATA[JS nà ní [phần 1] 7749 Cách khai báo một Function!]]></title><description><![CDATA[Bạn đã biết hết cách khai báo một Function trong JS chưa? Sau đây là một số cách khai báo cũng như cách dùng sẽ khiến bạn ngạc nhiên..]]></description><link>https://doracoder.tk/posts/js-nani-phan-1-khai-bao-mot-function</link><guid isPermaLink="false">https://doracoder.tk/posts/js-nani-phan-1-khai-bao-mot-function</guid><pubDate>Fri, 03 Jul 2020 12:09:29 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/js-nani-1.jpg&quot; alt=&quot;JS Function&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Khai báo Function trong JavaScript dẫu rằng đơn giản nhưng bạn đã biết hết chưa? Sau đây là một số kiểu khai báo trong JavaScript sẽ khiến bạn ngạc nhiên!&lt;/p&gt;
+&lt;h2 id=&quot;1-function-declaration&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-function-declaration&quot; aria-label=&quot;1 function declaration permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. Function declaration&lt;/h2&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;function add(a, b) {
+  return a + b;
+}
+add(1, 2); // 3&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Đây là kiểu khai báo đơn giản nhất mà bạn chắc chắn sẽ biết. Đây là một loại &lt;em&gt;&lt;strong&gt;Function mỳ ăn liền&lt;/strong&gt;&lt;/em&gt; - gọi là chạy!&lt;/p&gt;
+&lt;h2 id=&quot;2-function-expression&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-function-expression&quot; aria-label=&quot;2 function expression permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2. Function expression&lt;/h2&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;let add = function (a, b) {
+  return a + b;
+}
+add(1, 2) // 3&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Cũng là một kiểu khai báo function thường thấy trong JavaScript. Tuy nhiên, bạn chỉ sử dụng được khi đã khai báo nó&lt;/p&gt;
+&lt;h2 id=&quot;3-iife-viết-tắt-của-immediately-invoked-function-expression&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-iife-vi%E1%BA%BFt-t%E1%BA%AFt-c%E1%BB%A7a-immediately-invoked-function-expression&quot; aria-label=&quot;3 iife viết tắt của immediately invoked function expression permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;3. IIFE (viết tắt của Immediately-invoked function expression)&lt;/h2&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;(function(a, b) {
+  return a + b;
+})(1, 2) // 3&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Cái này mới đúng không?? Đây là cách để định nghĩa &lt;code class=&quot;language-text&quot;&gt;anonymous function&lt;/code&gt; (mấy thằng phía trên nhân gian gọi là &lt;code class=&quot;language-text&quot;&gt;named function&lt;/code&gt;)&lt;/p&gt;
+&lt;p&gt;Nhìn chung, IIFE rất dễ khai báo. Nó bao gồm 2 dấu ()(), &lt;strong&gt;()  thứ nhất&lt;/strong&gt; sẽ chứa phần thân function, &lt;strong&gt;() thứ hai&lt;/strong&gt; sẽ chứa các parameters để truyền vào function bên trong dấu &lt;strong&gt;() thứ nhất&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Câu hỏi là: để làm gì zậy ba??? Bạn sẽ cần đến IIFE trong một số trường hợp sau đây:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Dùng nó trong trường hợp nấu mì ăn liền, thực thi code trong function một cách tự động (&lt;em&gt;nghĩa là ưng chạy cái gì thì cứ bọc nó trong IIFE&lt;/em&gt;)! Bạn thử đoán 2 đoạn code sau nó sẽ ra cái gì nhé!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// Một trong những câu hỏi của Google và Amazon áp dụng khi tuyển nhân sự
+const arr = [1, 2, 3, 4];
+for (var i = 0; i &amp;lt; arr.length; i++) {
+  setTimeout(function() {
+    console.log(i);
+  }, 3000)
+} // output sẽ là gì??
+
+// 2
+const arr = [1, 2, 3, 4];
+for (var i = 0; i &amp;lt; arr.length; i++) {
+  (function (i) {
+    setTimeout(function() {
+       console.log(i);
+    }, 3000)
+  })(i)
+} // output sẽ là gì??&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;ul&gt;
+&lt;li&gt;Giảm thiểu memory leak! Mọi biến trong IIFE sẽ được GC (garbage collection) dọn khi ra khỏi scope của nó. &lt;/li&gt;
+&lt;/ul&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Để giúp các bạn hiểu rõ hơn thì memory leak là hiện tượng rò rỉ bộ nhớ khi thực thi chương trình, các vùng nhớ bị rò rỉ sẽ thất thoát và không được giải phóng cho các chương trình khác sử dụng&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&quot;4-closure-function&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#4-closure-function&quot; aria-label=&quot;4 closure function permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;4. Closure function&lt;/h2&gt;
+&lt;p&gt;Lang thang đâu đó trong đống code JS trên Github bạn sẽ gặp dòng code sau đây:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;const a = add(1, 2)();
+// Hoặc ghê hơn
+const b = add(1, 2)()();&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Bạn sẽ thốt lên &lt;em&gt;“wtf!! Cái gì đây?”&lt;/em&gt;  Thực ra nó là 1 &lt;strong&gt;inner function&lt;/strong&gt; nằm trong một function khác (gọi là &lt;strong&gt;outer function&lt;/strong&gt;). Trong trường hợp này &lt;strong&gt;outer function&lt;/strong&gt; return về một &lt;strong&gt;inner function&lt;/strong&gt;, và để function này chạy được bạn phải thêm cặp dấu &lt;strong&gt;()&lt;/strong&gt;. Theo dõi đoạn code sau đây bạn sẽ hiểu:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;function add(a, b) { // outer function
+  return function () { // inner function
+    return a + b;
+  }
+}
+
+add(1, 2)(); // 3&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h2 id=&quot;5-funcion-object&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#5-funcion-object&quot; aria-label=&quot;5 funcion object permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;5. Funcion Object&lt;/h2&gt;
+&lt;p&gt;Để kết thúc lại bài này mình xin giới thiệu thêm một cách khai báo cực kì thú vị của JS nữa là Function Object. Theo dõi đoạn code này nhé:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;const fncBody = &amp;quot;return a + b;&amp;quot;;
+const add = new Function([&amp;#39;a&amp;#39;, &amp;#39;b&amp;#39;], fncBody);
+add(1, 2); // 3&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Yayy!!! Nhìn qua thì cũng thường chứ có gì thú vị đâu đúng không?? Điều thú vị nằm ở chỗ nó có thể biến bất cứ String, Text hay JSON thành Function và thực thi chúng. Chúng ta có thể đặt một Function mã hóa nào đó trong Response trả về từ API chẳng hạn, ứng dụng là vô kể. Theo dõi tiếp nhé:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;const sayHello100times = function() {
+  for(let i = 1; i &amp;lt;= 100; i++) {
+    console.log(`Hello ${i}`);
+  }
+}
+// Convert đoạn Function trên thành String!
+const fncBody = sayHello100times.toString().match(/function[^{]+\{([\s\S]*)\}$/)[1]; // thử console.log() thằng này ra xem
+const sayHello = new Function([], fncBody);
+sayHello();&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Đống code trên sẽ in ra 100 dòng &lt;code class=&quot;language-text&quot;&gt;Hello&lt;/code&gt;. Thật thú vị phải không nào. Function về String rồi lại về Function. Chúng ta có thể khởi tạo Function này trên máy chúng ta và gửi nó để thực thi ở một nơi nào đó trên Internet!&lt;/p&gt;
+&lt;p&gt;Bài viết đến đây là kết thúc, hy vọng các kiến thức trên là bổ ích cho các bạn.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/thanks-for-watching.jpg&quot; alt=&quot;Thanks For Watching&quot;&gt;&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Git [phần 1] bài học vỡ lòng]]></title><description><![CDATA[Git căn bản phần 1 - Sự ra đời của trình quản lý phiên bản]]></description><link>https://doracoder.tk/posts/git-phan-1-bai-hoc-vo-long</link><guid isPermaLink="false">https://doracoder.tk/posts/git-phan-1-bai-hoc-vo-long</guid><pubDate>Wed, 01 Jul 2020 14:34:22 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/git-phan-1-3.png&quot; alt=&quot;Git&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Nghề lập trình vốn được cho là ngành nghề hiện đại, nhưng bản chất thì vẫn là một ngành nghề thủ công. Những dòng code từ đơn giản đến phức tạp đều được xây dựng bởi bàn tay con người như ngành dệt may vậy! Tuy nhiên, ngành dệt may thì cũng từ sợi chỉ cây kim.. rồi sau này mới có phát minh máy kéo sợi của James Hargreaves trong cuộc cách mạng công nghiệp ở Anh và đưa ngành dệt may thế giới phát triển vượt bậc!&lt;/p&gt;
+&lt;p&gt;Trong bài chuỗi bài viết này mình sẽ nói vè Git, một trong những “máy kéo sợi” trong ngành lập trình - thời đại 4.0&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/git-phan-1-2.jpg&quot; alt=&quot;Git&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Git cùng với anh em của nó như SVN, Mercurial,.. thì được gọi là trình quản lý phiên bản (Version Control System - VCS). Vậy trước tiên để biết VCS nó là cái gì?.. thì hãy xem trước khi có VCS ae coder làm gì nhé. &lt;/p&gt;
+&lt;p&gt;Lưu ý: bài này có thể hơi dài đối với các bạn lười đọc nhưng mình sẽ giải thích tường tận cái gọi là Git này nhé. Let’s go!&lt;/p&gt;
+&lt;h2 id=&quot;1-trước-khi-vcs-ra-đời&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-tr%C6%B0%E1%BB%9Bc-khi-vcs-ra-%C4%91%E1%BB%9Di&quot; aria-label=&quot;1 trước khi vcs ra đời permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. Trước khi VCS ra đời:&lt;/h2&gt;
+&lt;p&gt;Giả sử anh lập trình viên tạo dùng một đống các thuật toán bại não chỉ để in ra dòng &lt;code class=&quot;language-text&quot;&gt;Hello World&lt;/code&gt; như sau:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// HelloWorld.js
+let hello = String.fromCharCode(72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100);
+console.log(hello); // Hello World&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;ok! code in ra được &lt;code class=&quot;language-text&quot;&gt;Hello World&lt;/code&gt; nhưng sếp lại bảo chữ “world” phải viết thường cơ. Nhưng đoạn charCode trên quá lằng nhằng nên anh ta viết lại hoàn toàn cho nhanh&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// HelloWorld.js
+let hello = String.fromCharCode(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100);
+console.log(hello); // Hello world&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Nhưng than ôi, &lt;strong&gt;cuộc đời bất công nên kéo hoài cộng lông không bao giờ thẳng!&lt;/strong&gt; Lát sau anh sếp lại bảo: &lt;em&gt;“Giờ anh thấy chữ ‘world’ viết hoa đẹp hơn nên chú sửa lại giùm anh nha!”&lt;/em&gt; Đến đây thì anh coder tội nghiệp phải code lại như ban đầu và đặt tên nó lại là &lt;code class=&quot;language-text&quot;&gt;HelloWorld2.js&lt;/code&gt; nhằm tránh trường hợp anh sếp lại thay lòng đổi dạ&lt;/p&gt;
+&lt;p&gt;Qua câu chuyện trên chúng ta thấy thằng anh coder đang thực hiện công việc &lt;em&gt;&lt;strong&gt;quản lý phiên bản&lt;/strong&gt;&lt;/em&gt;, nhưng lại theo cách thủ công nhất. Chắc hẳn không ít ae đọc bài viết này đã từng làm vậy rồi phải không nào?&lt;/p&gt;
+&lt;p&gt;Trở lại câu chuyện thực tế, &lt;em&gt;khách hàng là thượng đế.. chúng ta không thể thay lấy gậy \&lt;/em&gt; đập* khách hàng được :v nên bắt buộc chúng ta phải thay đổi*. Nhưng câu chuyện đặt tên file (‘HelloWorld-1.js’, ‘HelloWorld-2.js’, ‘HelloWorld-n.js’) của anh chàng phía trên không phải là cách hay. Vừa tốn bộ nhớ vừa khó quản lý. Từ đó &lt;strong&gt;Version Control System&lt;/strong&gt; ra đời&lt;/p&gt;
+&lt;p&gt;Giải thích một cách hàn lâm thì&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Hệ thống quản lý phiên bản - Version Control System (VCS) là các hệ thống chịu trách nhiệm quản lý các thay đổi đối với tài liệu, chương trình máy tính ,.. . Các thay đổi thường được xác định bằng một số hoặc mã chữ cái, được gọi là “số sửa đổi”, “mức sửa đổi” hoặc đơn giản là “sửa đổi”. Ví dụ: một tập hợp các tệp ban đầu là “phiên bản 1”. Khi thay đổi đầu tiên được thực hiện, tập kết quả là “phiên bản 2”, v.v. Mỗi sửa đổi được liên kết với dấu thời gian và người thực hiện thay đổi. Các bản sửa đổi có thể được so sánh, khôi phục và với một số loại tệp, hoặc hợp nhất &lt;a href=&quot;https://en.wikipedia.org/wiki/Version_control&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;theo Wikipedia&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Hay giải thích theo các câu chuyện đam mỹ của tung khựa là: Ông lão năm ổng 70 tuổi có thể xuyên không về thời điểm ổng 22 tuổi để tỏ tình với người ổng yêu và nói “Em yêu anh”.  &lt;strong&gt;Yao Ming :v&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Trên đây là ví dụ vui về một chức năng cơ bản của VCS, thực ra nó còn rất nhiều chức năng khác nữa (Teamwork, debug, cấu hình môi trường development/production, v.v..). Lần lượt các chức năng mình sẽ đề cập trong series này.&lt;/p&gt;
+&lt;h2 id=&quot;2-và-đời-ta-có-git&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-v%C3%A0-%C4%91%E1%BB%9Di-ta-c%C3%B3-git&quot; aria-label=&quot;2 và đời ta có git permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2. Và đời ta có Git:&lt;/h2&gt;
+&lt;p&gt;Sự ra đời của Git bắt đầu từ năm 2005. Vậy trước năm 2005 thì sao?? Chúng ta có &lt;strong&gt;BitKeeper&lt;/strong&gt; dùng cho các dự án phát triển mã nguồn nhân Linux. Từ năm 2005, &lt;strong&gt;BitKeeper&lt;/strong&gt; và &lt;strong&gt;Linux&lt;/strong&gt; đường ai nấy đi &lt;em&gt;(nhờ có cuộc chia ly này mà giờ ae dev có Git free mà sài hehe)&lt;/em&gt;, và cha đẻ của Linux là &lt;strong&gt;Linus Torvalds&lt;/strong&gt; đã phát triển công cụ của riêng họ. Câu chuyện của &lt;strong&gt;Git&lt;/strong&gt; bắt đầu từ đó, Git kế thừa &amp;#x26; phát triển các chức năng của &lt;strong&gt;BitKeeper&lt;/strong&gt; và cho ra một hệ thống mới:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Nhanh&lt;/li&gt;
+&lt;li&gt;Thiết kế đơn giản&lt;/li&gt;
+&lt;li&gt;Hỗ trợ tốt cho “phát triển phi tuyến tính” (non-linear development) - (hàng ngàn nhánh song song)&lt;/li&gt;
+&lt;li&gt;Phân tán toàn diện&lt;/li&gt;
+&lt;li&gt;Có khả năng xử lý các dự án lớn giống như nhân Linux một cách hiệu quả (về mặt tốc độ và khối lượng dữ liệu)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;* &lt;em&gt;Để hiểu 3 tiêu chí cuối cùng nó là cái gì thì mình sẽ giải thích trong các bài viết sau&lt;/em&gt;&lt;/p&gt;
+&lt;h3 id=&quot;21-tiêu-chí-khi-học-git&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#21-ti%C3%AAu-ch%C3%AD-khi-h%E1%BB%8Dc-git&quot; aria-label=&quot;21 tiêu chí khi học git permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.1 Tiêu chí khi học Git:&lt;/h3&gt;
+&lt;p&gt;Một số bạn có cách học về Git khá sai lầm đó là học về lệnh trước mà không hiểu rõ bản chất nó là gì. Vậy nên mình có một lời khuyên cho các bạn học Git là &lt;em&gt;“hãy hiểu rõ bản chất những câu lệnh mà bạn dùng”&lt;/em&gt; và những nguyên tắc cơ bản của Git thì cũng từ những điều khá đơn giản mà ra, chỉ gần bạn chịu khó suy nghĩ một chút thôi là sẽ ngộ ra được chân lý :kk&lt;/p&gt;
+&lt;h3 id=&quot;22-cài-đặt-git&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#22-c%C3%A0i-%C4%91%E1%BA%B7t-git&quot; aria-label=&quot;22 cài đặt git permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.2 Cài đặt Git:&lt;/h3&gt;
+&lt;p&gt;Không khó lắm khi bạn cài đặt một tool nào đó nhất là Windows. &lt;a href=&quot;https://git-scm.com/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Đây&lt;/a&gt; là trang chủ của nó, bạn chỉ việc download vào cài đặt. Đối với Linux thì các bạn chỉ cần chạy lệnh sau:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ sudo apt install git # Đối với các distro của Debian như Ubuntu, Kali linux
+$ sudo yum install git # Đối với các distro của Redhat như CentOS&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h3 id=&quot;23-tài-liệu-git&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#23-t%C3%A0i-li%E1%BB%87u-git&quot; aria-label=&quot;23 tài liệu git permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2.3 Tài liệu Git:&lt;/h3&gt;
+&lt;p&gt;Thật không khó để tìm ra tài liệu về Git trên mạng và cả Series bài viết này cũng vậy. Nhưng tài liệu trên trang chủ chính là tài liệu chính thống đầy đủ và chi tiết nhất&lt;/p&gt;
+&lt;h2 id=&quot;3-kết&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-k%E1%BA%BFt&quot; aria-label=&quot;3 kết permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;3. Kết:&lt;/h2&gt;
+&lt;p&gt;Trên đây là toàn bộ những sơ lược vể quá trình ra đời của Git, hẹn các bạn trong bài sau về loạt Series về Git&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Hướng dẫn setup server download tại nhà]]></title><description><![CDATA[Hướng dẫn setup server download tại nhà]]></description><link>https://doracoder.tk/posts/huong-dan-setup-server-download-tai-nha</link><guid isPermaLink="false">https://doracoder.tk/posts/huong-dan-setup-server-download-tai-nha</guid><pubDate>Wed, 03 Jun 2020 16:53:57 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/aria2-1.png&quot; alt=&quot;Hướng dẫn setup server download tại nhà&quot;&gt;&lt;/p&gt;
+&lt;p&gt;Chào các bạn, sau một thời gian code sấp mặt thì cũng rãnh rỗi share vài thứ linh tinh cho ae. Như tiêu đề, mình sẽ hướng dẫn ae cách setup 1 con server để cắm torrent hay download linh tinh như tài liệu nghiên cứu văn hóa Nhật chẳng hạn🤣.&lt;/p&gt;
+&lt;p&gt;Cộng thêm mạng mẽo hiện nay nó cứ như &lt;strong&gt;y^%&amp;#x26;^&lt;/strong&gt; mà ngồi down file &lt;strong&gt;&lt;em&gt;Boku&lt;em&gt;no&lt;/em&gt;pico.rar&lt;/em&gt;&lt;/strong&gt; có 2gb mà tận 2 tiếng là điều không thể chấp nhận được. Cái mình muốn là có 1 server có thể download các files đó hộ mình và nhất là ko phải mắc công ngồi chờ! Ok ko lòng vòng nữa mình đi vào chủ đề chính&lt;/p&gt;
+&lt;h2 id=&quot;chuẩn-bị&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#chu%E1%BA%A9n-b%E1%BB%8B&quot; aria-label=&quot;chuẩn bị permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Chuẩn bị:&lt;/h2&gt;
+&lt;deckgo-highlight-code   line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;1 con pc (tất nhiên)
+1 HDD drive (mấy file fullhd 4k nó ngốn ghê lắm)
+1 wifi modem + user/pass setup&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;*PC thì mình dùng con raspberry pi 4 (chạy linux) của mình, còn windows thì chắc phải build code..&lt;/p&gt;
+&lt;h2 id=&quot;giai-đoạn-setup&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#giai-%C4%91o%E1%BA%A1n-setup&quot; aria-label=&quot;giai đoạn setup permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Giai đoạn setup:&lt;/h2&gt;
+&lt;p&gt;Với Linux thì ae đã quá quen với 2 thằng đó là &lt;a href=&quot;https://www.gnu.org/software/wget/manual/wget.html&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;wget&lt;/a&gt; và pro hơn tý là &lt;a href=&quot;https://curl.haxx.se/docs/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;curl&lt;/a&gt;, với curl thì đã quá đủ để sài rồi, nhưng 2 thằng để có nhược điểm chung là chức năng resume config khá lằng nhằng, thứ 2 nữa là thiếu torrent(cái này thì ko được thiếu 😗).
+Mình giới thiệu thêm cho ae thằng powerful hơn rất nhiều đó là &lt;a href=&quot;https://aria2.github.io/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;aria2&lt;/a&gt;, thằng này được ví như &lt;a href=&quot;https://www.internetdownloadmanager.com/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;IDM&lt;/a&gt; bên windows, hỗ trợ hầu hết các giao thức, resume, multi-connection, bla bla… Để install aria2 thì ae chạy đoạn lệnh bên dưới&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;sudo apt-get update &amp;amp;&amp;amp; sudo apt-get upgrade -y
+sudo apt-get install aria2 -y&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Kiểm tra install thành công hay chưa:&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;aria2c -v # Ko lỗi thì đã cài thành công&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Để sài thằng aria2 thì phải tương tác qua dòng lệnh, ae tham khảo tại trang của nó nhé, link: &lt;a href=&quot;https://aria2.github.io/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;https://aria2.github.io/&lt;/a&gt;
+Tuy nhiên để đơn giản hơn thì aria2 có giới thiệu 2 app đó là &lt;a href=&quot;https://snapcraft.io/uget&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;uGet&lt;/a&gt;(desktop app)- thằng này có trên snap store, và thằng thử 2 là webui-aria2(web app)-mình sẽ hướng dẫn setup thằng này&lt;/p&gt;
+&lt;h2 id=&quot;cài-webui-aria2&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#c%C3%A0i-webui-aria2&quot; aria-label=&quot;cài webui aria2 permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Cài webui-aria2:&lt;/h2&gt;
+&lt;p&gt;Lưu ý:để cài thằng này thì hãy chắc chắn đã cài git và nodejs thêm 1 node-package nữa là pm2 nhé!&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;git clone https://github.com/ziahamza/webui-aria2.git
+cd webui-aria2
+aria2c --enable-rpc --rpc-listen-all
+pm2 start node-server.js&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Ae mở trình duyệt http://&amp;#x3C;ip của pc&gt;:8888 để check thành quả.&lt;/p&gt;
+&lt;h2 id=&quot;kết&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#k%E1%BA%BFt&quot; aria-label=&quot;kết permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Kết&lt;/h2&gt;
+&lt;p&gt;Tới đây thì cơ bản đã xong 80%, 20% còn lại là phải NAT nó ra môi trường internet chứ localhost thì hướng dẫn làm gì&lt;/p&gt;
+&lt;p&gt;Để mở port thì ae chú ý vài điều:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;ae login router(modem) vào phần Advance settings bật chức năng NAT và Port forwarding lên trỏ đến ip của pc&lt;/li&gt;
+&lt;li&gt;ngoài internal port là 8888 và exten port tùy ý thì còn phải mở thêm 1 port nữa là 6800 (cả intern/exten port như nhau) để thằng webui nó control dk aria2&lt;/li&gt;
+&lt;li&gt;việc setup có thể khác nhau tùy modem&lt;/li&gt;
+&lt;li&gt;ae chú ý tránh mở port 80, 8080 (ví lý do bảo mật cho con server của mình)&lt;/li&gt;
+&lt;li&gt;có thể setup DDNS cho con pc để dễ truy cập, trong phần này mình ko hướng dẫn, ae có thể tham khảo gg&lt;/li&gt;
+&lt;li&gt;có thể custom giao diện của webui(thằng này sai angular) đổi title thêm bảo mật, tùy ý ae&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;*P/s: bên dưới là thành quả của mình, giờ thì nhâm nhi trà đá vỉa hè về nhà là file down xong. Chúc ae thành công!&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/aria2-2.jpg&quot; alt=&quot;Hướng dẫn setup server download tại nhà&quot;&gt;&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Biến android phone thành Web-server]]></title><description><![CDATA[Thủ thuật cấu hình VPS cho smartphone Android]]></description><link>https://doracoder.tk/posts/make-android-phone-more-awesome-phan-1</link><guid isPermaLink="false">https://doracoder.tk/posts/make-android-phone-more-awesome-phan-1</guid><pubDate>Sun, 10 May 2020 03:34:21 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/mapma-4.jpg&quot; alt=&quot;Android&quot;&gt;&lt;/p&gt;
+&lt;h2 id=&quot;1-chuẩn-bị&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-chu%E1%BA%A9n-b%E1%BB%8B&quot; aria-label=&quot;1 chuẩn bị permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. Chuẩn bị&lt;/h2&gt;
+&lt;ol&gt;
+&lt;li&gt;Android phone (đã rooted hoặc chưa cũng được)&lt;/li&gt;
+&lt;li&gt;Laptop/PC &lt;/li&gt;
+&lt;li&gt;Cả 2 thiết bị trên cùng kết nối chung mạng wifi&lt;/li&gt;
+&lt;li&gt;Và một chút kiến thức về Linux, git&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Note: Trong bài viết mình deploy web server chạy NodeJS, đối với nền tảng các bạn chỉ cần setup trên android tới bước 5 là đủ&lt;/p&gt;
+&lt;h2 id=&quot;2-cài-ứng-dụng-termux-trên-android&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#2-c%C3%A0i-%E1%BB%A9ng-d%E1%BB%A5ng-termux-tr%C3%AAn-android&quot; aria-label=&quot;2 cài ứng dụng termux trên android permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;2. Cài ứng dụng Termux trên Android&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;https://play.google.com/store/apps/details?id=com.termux&amp;#x26;hl=vi&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;link Termux&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Giới thiệu sơ qua về Termux app, thì đây là ứng dụng tương tự như Terminal trên linux, nhưng cái hay là chúng hỗ trợ môi trường Linux thông qua trình quản lí packages đi kèm. Các bạn có thể tham khảo về termux trên Github (open-source)&lt;/p&gt;
+&lt;p&gt;Xem thêm:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://github.com/termux/termux-packages/tree/master/packages&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Các Packages Termux hỗ trợ&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://wiki.termux.com/wiki/Differences_from_Linux&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;Termux khác với các distro Linux khác như thế nào&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Trong bài này mình thực hiện test trên con xiaomi redmi note 4 (mido / rooted), chưa root vẫn được nhé, nhưng cực cái là các bạn ko duyệt file trên đt được. Còn source code thì được dev trên laptop chạy ubuntu và deploy thông qua github. Let’s go&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt;: Termux hiện tại chỉ hoạt động với android 5 trở lên! Từ ngày 1.1.2020 sẽ ko hỗ trợ cho android 5 và 6, các phiên bản cũ hơn của Termux vẫn làm việc tốt, &lt;a href=&quot;https://archive.org/download/termux-repositories-legacy&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;tải tại đây&lt;/a&gt;&lt;/p&gt;
+&lt;h2 id=&quot;3-setup-authen-cho-ssh&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#3-setup-authen-cho-ssh&quot; aria-label=&quot;3 setup authen cho ssh permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;3. Setup Authen cho SSH&lt;/h2&gt;
+&lt;h3 id=&quot;install-open-ssh&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#install-open-ssh&quot; aria-label=&quot;install open ssh permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Install Open SSH&lt;/h3&gt;
+&lt;p&gt;Đầu tiên chúng ta phải setup ssh cho nó cái đã. Chạy lệnh sau &lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;apt update &amp;amp;&amp;amp; apt upgrade -y 
+apt install openssh&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h3 id=&quot;setup-ssh&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#setup-ssh&quot; aria-label=&quot;setup ssh permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Setup SSH&lt;/h3&gt;
+&lt;p&gt;Lấy username hệ thống. Có 3 cách là&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;$ pwd&lt;/code&gt; 		print working directory&lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;$ echo $HOME&lt;/code&gt; 	In biến HOME ra &lt;/li&gt;
+&lt;li&gt;&lt;code class=&quot;language-text&quot;&gt;$ whoami&lt;/code&gt; 		WHO AM I?&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;=&gt; username của mình là &lt;code class=&quot;language-text&quot;&gt;u0_a173&lt;/code&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Set password cho account. Như linux thôi &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;code class=&quot;language-text&quot;&gt;$ passwd &amp;lt;username&amp;gt;&lt;/code&gt;	Ví dụ: &lt;code class=&quot;language-text&quot;&gt;$ passwd u0_a173&lt;/code&gt; Nhập pass 2 lần nhá.
+&lt;code class=&quot;language-text&quot;&gt;$ sshd&lt;/code&gt; để start ssh server &lt;/p&gt;
+&lt;h2 id=&quot;4-connect-ssh-đến-android-phone&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#4-connect-ssh-%C4%91%E1%BA%BFn-android-phone&quot; aria-label=&quot;4 connect ssh đến android phone permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;4. Connect SSH đến Android phone&lt;/h2&gt;
+&lt;p&gt;Test thử xem sao? Mở terminal trên Ubuntu lên, trên windows có thể sử dụng powershell nha!&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ ssh -p 8022 u0_a173@192.168.1.102&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Giải thích chút xíu về command trên, &lt;code class=&quot;language-text&quot;&gt;-p 8022&lt;/code&gt; là port ssh trên Android phone, nghe hơi sai sai, thông thường thì ssh start ở port 21/22, nhưng trên Android phone thì Termux map nó ở port 8022, &lt;code class=&quot;language-text&quot;&gt;u0_a173&lt;/code&gt; là username lúc nãy, &lt;code class=&quot;language-text&quot;&gt;192.168.1.102&lt;/code&gt; là ip trong mạng LAN (wifi), muốn biết thì vào settings &gt;&gt; WIFI bấm vào wifi đang connecting thì lấy được, hoặc vào trang setup của Router wifi &gt;&gt; DHCP Lease Information là ra.&lt;/p&gt;
+&lt;p&gt;Từ lúc này mình setup ko cần động đến đt nữa, mọi thao tác sẽ qua ssh trên Ubuntu terminal cho tiện, sau bài này mình sẽ hướng dẫn connect đến android phone thông qua Internet/3G.4G đều được, public server web…&lt;/p&gt;
+&lt;h2 id=&quot;5-setup-môi-trường-trên-android-phone&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#5-setup-m%C3%B4i-tr%C6%B0%E1%BB%9Dng-tr%C3%AAn-android-phone&quot; aria-label=&quot;5 setup môi trường trên android phone permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;5. Setup môi trường trên Android phone&lt;/h2&gt;
+&lt;p&gt;Update lần nữa Android phone&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ apt update &amp;amp;&amp;amp; apt upgrade&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Một số hướng dẫn thao tác với Termux&lt;/p&gt;
+&lt;p&gt;Working with packages:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Search packages:   pkg search [query]&lt;/li&gt;
+&lt;li&gt;Install a package: pkg install [packages]&lt;/li&gt;
+&lt;li&gt;Upgrade packages:  pkg upgrade&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Trong bài này mình sẽ setup node js với express framework &lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ apt install nodejs&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Kiểm tra version hiện tại của Node và NPM&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ node -v &amp;amp;&amp;amp; npm -v&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Tạo 1 trang test với express trên laptop nha, sau đó deploy qua github.&lt;/p&gt;
+&lt;p&gt;Note: trong bài viết này mình coi như là bạn đã thông thạo Git &amp;#x26; Github mình ko giải thích gì thêm!&lt;/p&gt;
+&lt;p&gt;Thao tác tại PC ko phải với Android phone qua ssh&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ sudo apt-get update &amp;amp;&amp;amp; sudo apt-get upgrade -y
+$ sudo apt-get install nodejs
+$ npm install express
+$ npm install express-generator
+$ express --ejs MAPMA
+$ cd MAPMA
+$ git init
+$ git add .
+$ git commit -m &amp;quot;first commit&amp;quot;
+$ git remote add origin https://github.com/&amp;lt;username&amp;gt;/&amp;lt;your-repo&amp;gt;.git
+$ git push -u origin master&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Các commands bên trên là toàn bộ thiết lập mới cho Ubuntu dành cho bạn nào chưa biết &lt;/p&gt;
+&lt;p&gt;Setup git cho Android phone&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ apt install git&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h2 id=&quot;5-deploy&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#5-deploy&quot; aria-label=&quot;5 deploy permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;5. Deploy&lt;/h2&gt;
+&lt;p&gt;Clone repo phía trên từ github về&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ git clone https://github.com/&amp;lt;username&amp;gt;/&amp;lt;your-repo&amp;gt;.git
+$ cd &amp;lt;your-repo&amp;gt;
+$ npm install 
+$ npm start&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Hoặc bạn có thể clone Project demo của mình&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ git clone https://github.com/tranphuquy19/MAPMA.git
+$ cd MAPMA
+$ npm install 
+$ npm start&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Note: Các bạn có thể setup Express chạy ngầm (deamon) thông qua ForeverJS hoặc PM2. Cú pháp&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Forever JS&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Install&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ npm install -g forever&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Start &lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ forever start ./bin/www&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Stop&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ forever stopall&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;ol start=&quot;2&quot;&gt;
+&lt;li&gt;PM2 &lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Install&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ npm install -g pm2 &lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Start&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ pm2 start ./bin/www&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Stop&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;$ pm2 stop all&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h2 id=&quot;7-enjoy&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#7-enjoy&quot; aria-label=&quot;7 enjoy permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;7. Enjoy!!!&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&quot;/media/mapma-1.png&quot; alt=&quot;demo&quot; title=&quot;Trang demo trên điện thoại sẽ như thế này&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/mapma-2.png&quot; alt=&quot;demo&quot; title=&quot;Optional Title&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/mapma-3.png&quot; alt=&quot;demo&quot; title=&quot;Optional Title&quot;&gt;&lt;/p&gt;</content:encoded></item><item><title><![CDATA[Sử dụng Socket.io với Express-generator]]></title><description><![CDATA[Hướng dẫn sử dụng Socket.io với Express-generator]]></description><link>https://doracoder.tk/posts/huong-dan-su-dung-socket-io-voi-express-generator</link><guid isPermaLink="false">https://doracoder.tk/posts/huong-dan-su-dung-socket-io-voi-express-generator</guid><pubDate>Sat, 09 May 2020 14:22:38 GMT</pubDate><content:encoded>&lt;p&gt;&lt;img src=&quot;/media/express-socket-io-1.png&quot; alt=&quot;express-socket-io&quot;&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Bản thân &lt;em&gt;&lt;a href=&quot;/tag/expressjs/&quot;&gt;express&lt;/a&gt;&lt;/em&gt; không được xây dựng theo cấu trúc MVC hay bất kỳ cấu trúc nào khác. Và rồi &lt;code class=&quot;language-text&quot;&gt;express-generator&lt;/code&gt; như một giải pháp để tạo dựng project gần giống với MVC, thay vì nhồi code tất cả (Route, Middleware, …) vào cùng 1 file duy nhất. Rất tiện dụng phải ko nào…	&lt;/li&gt;
+&lt;li&gt;Còn việc thêm &lt;em&gt;&lt;a href=&quot;/tag/socket-io/&quot;&gt;socket.io&lt;/a&gt;&lt;/em&gt; thì sao?? Trước hết nói qua về &lt;code class=&quot;language-text&quot;&gt;express-generator&lt;/code&gt; thì file &lt;code class=&quot;language-text&quot;&gt;./bin/www&lt;/code&gt; chính là nơi máy chủ Express khởi tạo chứ ko phải là &lt;code class=&quot;language-text&quot;&gt;app.js&lt;/code&gt; như nhiều người lầm tưởng, nên việc thêm &lt;em&gt;&lt;a href=&quot;/tag/socket-io/&quot;&gt;socket.io&lt;/a&gt;&lt;/em&gt; là có chút khó khăn và trang &lt;em&gt;&lt;a href=&quot;https://socket.io/docs/server-api/&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;docs&lt;/a&gt;&lt;/em&gt; của Socket.IO cũng ko chỉ rõ điều này (╥╥).. Nếu bạn đang thắc mắc như mình thì bài viết này là câu trả lời cho bạn 👏👏👏&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;1-khởi-tạo-project--install-socketio&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#1-kh%E1%BB%9Fi-t%E1%BA%A1o-project--install-socketio&quot; aria-label=&quot;1 khởi tạo project  install socketio permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;1. Khởi tạo project &amp;#x26; install socket.io&lt;/h2&gt;
+&lt;deckgo-highlight-code language=&quot;bash&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;express socket-io-with-express  # khởi tạo project với express-genrator
+cd socket-io-with-express       
+npm install                     # cài đặt các dependencies
+
+npm install socket.io --save    # thêm socket.io&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;h2 id=&quot;cấu-hình&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#c%E1%BA%A5u-h%C3%ACnh&quot; aria-label=&quot;cấu hình permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Cấu hình&lt;/h2&gt;
+&lt;p&gt;Tạo thêm 1 file có tên &lt;code class=&quot;language-text&quot;&gt;socket.js&lt;/code&gt; tại folder &lt;code class=&quot;language-text&quot;&gt;./routes&lt;/code&gt; với nội dung như sau&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// ./routes/socket.js
+var express = require(&amp;#39;express&amp;#39;);
+var router = express.Router();
+
+module.exports = (io) =&amp;gt; {
+    io.on(&amp;#39;connection&amp;#39;, socket =&amp;gt; {
+        let { id } = socket;
+        console.log(&amp;#39;new connection id:&amp;#39;, id);
+
+        socket.on(&amp;#39;disconnect&amp;#39;, socket =&amp;gt; {
+            console.log(&amp;#39;disconnect id:&amp;#39;, id);
+        });
+    });
+
+    return router;
+}&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Trong đoạn code trên, mình tách code xử lý realtime ra thành 1 file riêng để thực hiện như 1 route, và gắn nó vào server thông qua &lt;code class=&quot;language-text&quot;&gt;app.use()&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Tại &lt;code class=&quot;language-text&quot;&gt;app.js&lt;/code&gt;&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// app.js
+...
+var app = express();
+var io = require(&amp;#39;socket.io&amp;#39;)();
+app.io = io;
+...
+/* truyền thằng io xuống cho router socketRouter xử lý */
+var socketRouter = require(&amp;#39;./routes/socket&amp;#39;)(io); 
+app.use(&amp;#39;/&amp;#39;, socketRouter); // lưu ý là path phải là &amp;#39;/&amp;#39;
+
+app.use(&amp;#39;/&amp;#39;, indexRouter);
+app.use(&amp;#39;/users&amp;#39;, usersRouter);
+...
+module.exports = app;&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Trong đoạn code trên mình đã gắn biến &lt;code class=&quot;language-text&quot;&gt;io&lt;/code&gt; cho thằng &lt;code class=&quot;language-text&quot;&gt;app&lt;/code&gt; rồi thì trong &lt;code class=&quot;language-text&quot;&gt;./bin/www&lt;/code&gt; mình sẽ lôi nó ra rồi &lt;code class=&quot;language-text&quot;&gt;attach&lt;/code&gt; lên &lt;code class=&quot;language-text&quot;&gt;server&lt;/code&gt; như sau&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;javascript&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;// ./bin/www
+...
+var server = http.createServer(app);
+
+var io = app.io;
+io.attach(server);
+...&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Chỉnh file &lt;code class=&quot;language-text&quot;&gt;./views/index.ejs&lt;/code&gt; để test với nội dung&lt;/p&gt;
+&lt;deckgo-highlight-code language=&quot;markup&quot;  line-numbers=&quot;true&quot; editable=&quot;true&quot; &gt;
+          &lt;code slot=&quot;code&quot;&gt;&amp;lt;!-- ./views/index.ejs --&amp;gt;
+&amp;lt;!DOCTYPE html&amp;gt;
+&amp;lt;html lang=&amp;quot;en&amp;quot;&amp;gt;
+&amp;lt;head&amp;gt;
+  &amp;lt;meta charset=&amp;quot;UTF-8&amp;quot;&amp;gt;
+  &amp;lt;meta name=&amp;quot;viewport&amp;quot; content=&amp;quot;width=device-width, initial-scale=1.0&amp;quot;&amp;gt;
+  &amp;lt;title&amp;gt;Socket.IO love ExpressJS&amp;lt;/title&amp;gt;
+&amp;lt;/head&amp;gt;
+&amp;lt;body&amp;gt;
+  &amp;lt;h1&amp;gt;Socket.IO love ExpressJS @tranphuquy19&amp;lt;/h1&amp;gt;
+  &amp;lt;script src=&amp;quot;socket.io/socket.io.js&amp;quot;&amp;gt;&amp;lt;/script&amp;gt;
+  &amp;lt;script&amp;gt;
+    let url = window.location.origin;
+    let socket = io(url);
+  &amp;lt;/script&amp;gt;
+&amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;&lt;/code&gt;
+        &lt;/deckgo-highlight-code&gt;
+&lt;p&gt;Mở &lt;em&gt;&lt;a href=&quot;http://localhost:3000&quot; target=&quot;_blank&quot; rel=&quot;nofollow noopener noreferrer&quot;&gt;http://localhost:3000&lt;/a&gt;&lt;/em&gt; trên trình duyệt và kết quả như sau…&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/media/express-socket-io-2.png&quot; alt=&quot;Result&quot;&gt;&lt;/p&gt;
+&lt;h2 id=&quot;chúc-bạn-thành-công&quot; style=&quot;position:relative;&quot;&gt;&lt;a href=&quot;#ch%C3%BAc-b%E1%BA%A1n-th%C3%A0nh-c%C3%B4ng&quot; aria-label=&quot;chúc bạn thành công permalink&quot; class=&quot;anchor before&quot;&gt;&lt;svg aria-hidden=&quot;true&quot; focusable=&quot;false&quot; height=&quot;16&quot; version=&quot;1.1&quot; viewBox=&quot;0 0 16 16&quot; width=&quot;16&quot;&gt;&lt;path fill-rule=&quot;evenodd&quot; d=&quot;M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z&quot;&gt;&lt;/path&gt;&lt;/svg&gt;&lt;/a&gt;Chúc bạn thành công!&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Full code: &lt;a href=&quot;https://github.com/tranphuquy19/socketio-with-express-generator&quot; target=&quot;_blank&quot;&gt;Github&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content:encoded></item></channel></rss>
