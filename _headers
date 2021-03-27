@@ -154,18 +154,6 @@
   Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
   Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
   Link: </page-data/posts/make-android-phone-more-awesome-phan-1/page-data.json>; rel=preload; as=fetch; crossorigin
-/posts/huong-dan-setup-server-download-tai-nha
-  Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
-  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
-  Link: </framework-ddff9c6a94258f6c8286.js>; rel=preload; as=script
-  Link: </532a2f07-e8f2004ed6697a7c6ea1.js>; rel=preload; as=script
-  Link: </app-a07171a383533004e60d.js>; rel=preload; as=script
-  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
-  Link: </1ce583ce535e852f16e95f007c3cfaae6c733a5c-fb1875406d8f66e1db24.js>; rel=preload; as=script
-  Link: </643651a62fb35a9bb4f20061cb1f214a352d7976-a4ad2bc8d17cc516035d.js>; rel=preload; as=script
-  Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
-  Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
-  Link: </page-data/posts/huong-dan-setup-server-download-tai-nha/page-data.json>; rel=preload; as=fetch; crossorigin
 /posts/git-phan-1-bai-hoc-vo-long
   Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
   Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
@@ -178,6 +166,30 @@
   Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
   Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
   Link: </page-data/posts/git-phan-1-bai-hoc-vo-long/page-data.json>; rel=preload; as=fetch; crossorigin
+/posts/js-nani-phan-1-khai-bao-mot-function
+  Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
+  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
+  Link: </framework-ddff9c6a94258f6c8286.js>; rel=preload; as=script
+  Link: </532a2f07-e8f2004ed6697a7c6ea1.js>; rel=preload; as=script
+  Link: </app-a07171a383533004e60d.js>; rel=preload; as=script
+  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
+  Link: </1ce583ce535e852f16e95f007c3cfaae6c733a5c-fb1875406d8f66e1db24.js>; rel=preload; as=script
+  Link: </643651a62fb35a9bb4f20061cb1f214a352d7976-a4ad2bc8d17cc516035d.js>; rel=preload; as=script
+  Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
+  Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
+  Link: </page-data/posts/js-nani-phan-1-khai-bao-mot-function/page-data.json>; rel=preload; as=fetch; crossorigin
+/posts/huong-dan-setup-server-download-tai-nha
+  Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
+  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
+  Link: </framework-ddff9c6a94258f6c8286.js>; rel=preload; as=script
+  Link: </532a2f07-e8f2004ed6697a7c6ea1.js>; rel=preload; as=script
+  Link: </app-a07171a383533004e60d.js>; rel=preload; as=script
+  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
+  Link: </1ce583ce535e852f16e95f007c3cfaae6c733a5c-fb1875406d8f66e1db24.js>; rel=preload; as=script
+  Link: </643651a62fb35a9bb4f20061cb1f214a352d7976-a4ad2bc8d17cc516035d.js>; rel=preload; as=script
+  Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
+  Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
+  Link: </page-data/posts/huong-dan-setup-server-download-tai-nha/page-data.json>; rel=preload; as=fetch; crossorigin
 /posts/trien-khai-kubernetes-cluster-trong-mot-not-nhac
   Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
   Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
@@ -202,18 +214,6 @@
   Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
   Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
   Link: </page-data/posts/ket-hop-socket-io-trong-du-an-best-practice/page-data.json>; rel=preload; as=fetch; crossorigin
-/posts/js-nani-phan-1-khai-bao-mot-function
-  Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
-  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
-  Link: </framework-ddff9c6a94258f6c8286.js>; rel=preload; as=script
-  Link: </532a2f07-e8f2004ed6697a7c6ea1.js>; rel=preload; as=script
-  Link: </app-a07171a383533004e60d.js>; rel=preload; as=script
-  Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
-  Link: </1ce583ce535e852f16e95f007c3cfaae6c733a5c-fb1875406d8f66e1db24.js>; rel=preload; as=script
-  Link: </643651a62fb35a9bb4f20061cb1f214a352d7976-a4ad2bc8d17cc516035d.js>; rel=preload; as=script
-  Link: </component---src-templates-post-template-js-5d7bbd3fc7e340f56d9f.js>; rel=preload; as=script
-  Link: </page-data/app-data.json>; rel=preload; as=fetch; crossorigin
-  Link: </page-data/posts/js-nani-phan-1-khai-bao-mot-function/page-data.json>; rel=preload; as=fetch; crossorigin
 /tag/android
   Link: </webpack-runtime-53f2bdd476696e2eb0c5.js>; rel=preload; as=script
   Link: </styles-407fe62976dc5310c43e.js>; rel=preload; as=script
